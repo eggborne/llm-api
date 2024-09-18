@@ -1,0 +1,28 @@
+{
+  "name": "llm-api",
+  "version": "1.0.0",
+  "description": "API for communicating with LLMs",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs",
+    "dev": "nodemon index.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "llm-api"
+  },
+  "keywords": [
+    "llm",
+    "api"
+  ],
+  "author": "mike@mikedonovan.dev",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.0",
+    "openai": "^4.62.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.5"
+  }
+}
