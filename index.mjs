@@ -1,5 +1,6 @@
 import express from 'express';
-import path from 'path';
+// import path from 'path';
+import logger from './logger.mjs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getEmojis, getThemeWords } from './services/themeService.mjs';
@@ -10,46 +11,131 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// app.use(express.static(path.join(__dirname, 'public')));
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// });
+
+// theme name -> word list
+
+const defaultThemeOptions = {
+  maxLength: 12,
+  maxWords: 12
+};
+
+app.post('/getThemeWords', async (req, res) => {
+  const {
+    themeName,
+    LLMSettings,
+    options
+  } = req.body;
+  logger.info(`\ngetThemeWords received themeName ${themeName}`);
+  try {
+    const { wordList, tokensUsed } = await getThemeWords(
+      themeName,
+      {
+        ...defaultThemeOptions,
+        ...options
+      },
+      LLMSettings
+    );
+    logger.info(`Got ${wordList.length} theme words.`);
+    logger.info(wordList);
+    res.json({
+      wordList,
+      tokensUsed
+    });
+  } catch (error) {
+    logger.info('Error in route /getThemeWords!', error);
+    res.json({ error });
+  }
 });
 
-// theme
+// word list -> emojis
 
-app.get('/getTheme', async (req, res) => {
-  const { theme, max } = req.query;
-  const {title, words} = await getThemeWords(theme.toUpperCase(), max);
-  console.log(title, words);
+app.post('/getEmojis', async (req, res) => {
+  const {
+    wordList,
+    options
+  } = req.body;
+
+  logger.info('\ngetEmojis received wordList');
+  logger.info(wordList);
+
+  try {
+    const { emojis, tokensUsed } = await getEmojis(wordList, options);
+
+    logger.info(`Got ${emojis.length} emojis:`);
+    logger.info(emojis.join(' - '));
+
+    res.json({
+      emojis,
+      tokensUsed
+    });
+  } catch (error) {
+    logger.info('Error in route /getEmojis!', error);
+    res.json({ error });
+  }
+});
+
+app.post('/generateTheme', async (req, res) => {
+  const {
+    themeName,
+    LLMSettings,
+    options
+  } = req.body;
+  const { wordList, tokensUsed: themeTokensUsed } = await getThemeWords(
+    themeName,
+    { ...defaultThemeOptions, ...options.theme },
+    LLMSettings
+  );
+  const { emojis, tokensUsed: emojiTokensUsed } = await getEmojis(wordList, options.emoji);
+  if (!emojis.length) {
+    logger.info('No emojis found.');
+  }
+  if (emojis.length % 2 !== 0) {
+    emojis.length = emojis.length - 1;
+  }
+  const left = emojis.slice(emojis.length / 2, emojis.length).join(' ');
+  const right = emojis.slice(0, emojis.length / 2).join(' ');
+  const fancyTitle = `${left} ${themeName} ${right}`;
+
+  const sortedList = wordList.sort((a, b) => b.length - a.length);
+
+  logger.info(fancyTitle);
+  logger.info(sortedList);
   res.json({
-    title,
-    words
+    data: {
+      fancyTitle,
+      sortedList,
+    },
+    tokensUsed: (themeTokensUsed + emojiTokensUsed)
   });
 });
 
 app.listen(port, () => {
-  console.log(`
+  logger.info(`
 ******************************************
-                                          |
- LLM Server running on http://localhost:${port}  |
-                                          |
+                                          
+ llm-api ---> http://localhost:${port}
+                                          
 ******************************************
 `);
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.warn(`Port ${port} is in use, trying another port...`);
+    logger.info(`Port ${port} is in use, trying another port...`);
     const newPort = parseInt(port) + 1; // Increment the port number by 1
     app.listen(newPort, () => {
-      console.log(`
+      logger.info(`
 ******************************************
-                                          |
- LLM Server running on http://localhost:${newPort}  |
-                                          |
+                                          
+ llm-api ---> http://localhost:${newPort}
+                                          
 ******************************************
 `);
     });
   } else {
-    console.error('Server error:', err);
+    logger.info('Server error:', err);
   }
 });
