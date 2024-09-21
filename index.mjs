@@ -1,9 +1,12 @@
 import express from 'express';
+import cors from 'cors';
+
 // import path from 'path';
 import logger from './logger.mjs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getEmojis, getThemeWords } from './services/themeService.mjs';
+import { getColors } from './services/colorService.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -11,6 +14,7 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
+app.use(cors());
 
 // app.use(express.static(path.join(__dirname, 'public')));
 // app.get('/', (req, res) => {
@@ -113,6 +117,27 @@ app.post('/generateTheme', async (req, res) => {
     tokensUsed: (themeTokensUsed + emojiTokensUsed)
   });
 });
+
+app.post('/generateColors', async (req, res) => {
+  const {
+    colorList,
+    options
+  } = req.body;
+
+
+  try {
+    const { newColors, tokensUsed } = await getColors(colorList, options);
+    logger.info(newColors);
+    res.json({
+      newColors,
+      tokensUsed
+    });
+  } catch (error) {
+    logger.info('Error in route /generateColors!', error);
+    res.json({ error });
+  }
+});
+
 
 app.listen(port, () => {
   logger.info(`
