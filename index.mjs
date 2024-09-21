@@ -124,11 +124,11 @@ app.post('/generateColors', async (req, res) => {
     options
   } = req.body;
 
-
   try {
-    const { newColors, tokensUsed } = await getColors(colorList, options);
+    const { newColors, mood, tokensUsed } = await getColors(colorList, options);
     logger.info(newColors);
     res.json({
+      mood,
       newColors,
       tokensUsed
     });

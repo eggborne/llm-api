@@ -21,7 +21,11 @@ export const getColors = async (colorList, options = { total: 4 }) => {
           "content": [
             {
               "type": "text",
-              "text": `You are a color theory expert, highly skilled at selecting collections of colors that go well together. You receive a colorList and find ${amount} aesthetically-pleasing complementary colors to those in the list, returning them (in 8-digit hex format) as an array newColors.`
+              "text": `You are an expert in selecting harmonious color palettes for artwork. You receive an array of objects containing color and alpha fields, and an amount. Your task is to suggest 'amount' number of new colors (with similar alpha values) that go well together with the given colorList, taken as a whole.
+
+              Do not suggest a collection consisting of all very similar colors.
+              
+              Return an 'amount'-length array of new objects containing color and alpha fields in the 'newColors' property of a JSON object.`
             }
           ]
         },
@@ -30,7 +34,7 @@ export const getColors = async (colorList, options = { total: 4 }) => {
           "content": [
             {
               "type": "text",
-              "text": `json {"colorList": ${colorList}}`
+              "text": `json {"colorList": ${JSON.stringify(colorList)}, "amount": ${amount}}`
             }
           ]
         }
